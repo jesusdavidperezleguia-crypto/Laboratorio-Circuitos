@@ -1,0 +1,287 @@
+﻿package com.example.laboratoriocircuitos
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.laboratoriocircuitos.logic.GeneradorKarnaugh
+import com.example.laboratoriocircuitos.logic.ResultadoKarnaugh
+
+private val KarnaughFondo = Color(0xFF101827)
+private val KarnaughPanel = Color(0xFF1C293B)
+private val KarnaughNaranja = Color(0xFFFF8733)
+private val KarnaughVerde = Color(0xFF70D69A)
+private val KarnaughTexto = Color(0xFFFFFFFF)
+
+@Composable
+fun PantallaKarnaugh() {
+
+    var formula by remember {
+        mutableStateOf("F = A*B + A*C")
+    }
+
+    var resultado by remember {
+        mutableStateOf<ResultadoKarnaugh?>(null)
+    }
+
+    var error by remember {
+        mutableStateOf<String?>(null)
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(KarnaughFondo)
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+
+        Text(
+            "MAPAS DE KARNAUGH",
+            color = KarnaughNaranja,
+            fontSize = 23.sp,
+            fontWeight = FontWeight.Bold
+        )
+
+        Text(
+            "Introduce una función booleana de 2, 3 o 4 variables.",
+            color = KarnaughTexto
+        )
+
+        OutlinedTextField(
+            value = formula,
+            onValueChange = {
+                formula = it
+                error = null
+            },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text("Función booleana") },
+            placeholder = { Text("F = A*B + A*C") },
+            singleLine = true,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = KarnaughTexto,
+                unfocusedTextColor = KarnaughTexto,
+                focusedBorderColor = KarnaughNaranja,
+                unfocusedBorderColor = Color.Gray,
+                focusedLabelColor = KarnaughNaranja,
+                unfocusedLabelColor = Color.LightGray
+            )
+        )
+
+        Button(
+            onClick = {
+                try {
+                    resultado = GeneradorKarnaugh.generar(formula)
+                    error = null
+                } catch (e: Exception) {
+                    resultado = null
+                    error = e.message ?: "No se pudo generar el mapa."
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = KarnaughNaranja,
+                contentColor = Color.Black
+            )
+        ) {
+            Text(
+                "GENERAR MAPA",
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        error?.let {
+            Text(
+                it,
+                color = Color(0xFFFF7777),
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        resultado?.let { datos ->
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = KarnaughPanel
+                ),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+
+                    Text(
+                        "MAPA DE KARNAUGH",
+                        color = KarnaughNaranja,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Text(
+                        "Variables: ${datos.variables.joinToString(", ")}",
+                        color = KarnaughTexto
+                    )
+
+                    val encabezado = datos.columnasGray.joinToString("     ")
+
+                    Text(
+                        encabezado,
+                        color = KarnaughNaranja,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    datos.mapa.forEachIndexed { indiceFila, fila ->
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+
+                            Text(
+                                datos.filasGray[indiceFila],
+                                color = KarnaughNaranja,
+                                fontWeight = FontWeight.Bold
+                            )
+
+                            fila.forEach { valor ->
+
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .aspectRatio(1f)
+                                        .border(
+                                            1.dp,
+                                            Color.Gray,
+                                            RoundedCornerShape(6.dp)
+                                        )
+                                        .background(
+                                            if (valor == 1) {
+                                                Color(0xFF245D48)
+                                            } else {
+                                                Color(0xFF29384C)
+                                            },
+                                            RoundedCornerShape(6.dp)
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        valor.toString(),
+                                        color = KarnaughTexto,
+                                        fontSize = 20.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Text(
+                        "Filas: ${datos.filasGray.joinToString(", ")}",
+                        color = Color.LightGray,
+                        fontSize = 12.sp
+                    )
+
+                    Text(
+                        "Columnas: ${datos.columnasGray.joinToString(", ")}",
+                        color = Color.LightGray,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = KarnaughPanel
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+
+                    Text(
+                        "MINTERMINOS",
+                        color = KarnaughNaranja,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Text(
+                        datos.minterminos.joinToString(", ") {
+                            "m$it"
+                        }.ifEmpty { "No hay minterminos." },
+                        color = KarnaughTexto
+                    )
+
+                    Divider(color = Color.Gray)
+
+                    Text(
+                        "AGRUPACIONES",
+                        color = KarnaughNaranja,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    if (datos.grupos.isEmpty()) {
+                        Text(
+                            "No se necesitan agrupaciones.",
+                            color = KarnaughTexto
+                        )
+                    }
+
+                    datos.grupos.forEachIndexed { indice, grupo ->
+
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text(
+                                "Grupo ${indice + 1}",
+                                color = KarnaughVerde,
+                                fontWeight = FontWeight.Bold
+                            )
+
+                            Text(
+                                "Expresión: ${grupo.expresion}",
+                                color = KarnaughTexto
+                            )
+
+                            Text(
+                                "Minterminos: ${grupo.minterminos.joinToString(", ")}",
+                                color = Color.LightGray,
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
+
+                    Divider(color = Color.Gray)
+
+                    Text(
+                        "FUNCIÓN SIMPLIFICADA",
+                        color = KarnaughVerde,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Text(
+                        datos.formulaSimplificada,
+                        color = KarnaughTexto,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+    }
+}

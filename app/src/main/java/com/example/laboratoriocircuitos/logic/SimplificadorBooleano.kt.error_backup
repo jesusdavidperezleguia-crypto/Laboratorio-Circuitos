@@ -1,0 +1,154 @@
+﻿package com.example.laboratoriocircuitos.logic
+
+data class PasoSimplificacion(
+    val regla: String,
+    val antes: String,
+    val despues: String,
+    val explicacion: String
+)
+
+data class ResultadoSimplificacion(
+    val original: String,
+    val simplificada: String,
+    val pasos: List<PasoSimplificacion>,
+    val equivalente: Boolean,
+    val variables: List<String>
+)
+
+object SimplificadorBooleano {
+
+    fun simplificar(formula: String): ResultadoSimplificacion {
+
+        val circuito = GeneradorCircuitos.generar(formula)
+        val original = circuito.expresion
+
+        require(circuito.variables.size <= 8) {
+            "El módulo admite hasta 8 variables."
+        }
+
+        var actual = original
+        val pasos = mutableListOf<PasoSimplificacion>()
+
+        repeat(20) {
+            val siguiente = aplicarReglas(actual)
+
+            if (siguiente == actual) {
+                return@repeat
+            }
+
+            pasos.add(
+                PasoSimplificacion(
+                    regla = siguiente.substringBefore("|"),
+                    antes = actual,
+                    despues = siguiente.substringAfter("|"),
+                    explicacion = siguiente.substringBefore("|")
+                )
+            )
+
+            actual = siguiente.substringAfter("|")
+        }
+
+        val originalCircuito = GeneradorCircuitos.generar(original)
+        val nuevoCircuito = GeneradorCircuitos.generar(actual)
+
+        var equivalente = true
+
+        val combinaciones = 1 shl circuito.variables.size
+
+        for (numero in 0 until combinaciones) {
+
+            val valores = circuito.variables.mapIndexed { indice, variable ->
+                variable to (
+                    numero and (1 shl (circuito.variables.size - indice - 1))
+                ) != 0
+            }.toMap()
+
+            val valorOriginal = SimuladorCircuitos.simular(
+                originalCircuito.raiz,
+                valores
+            )
+
+            val valorNuevo = SimuladorCircuitos.simular(
+                nuevoCircuito.raiz,
+                valores
+            )
+
+            if (valorOriginal != valorNuevo) {
+                equivalente = false
+                break
+            }
+        }
+
+        return ResultadoSimplificacion(
+            original = original,
+            simplificada = actual,
+            pasos = pasos,
+            equivalente = equivalente,
+            variables = circuito.variables
+        )
+    }
+
+    private fun aplicarReglas(expresion: String): String {
+
+        val reglas = listOf(
+            Triple("Identidad AND", "A*1", "A"),
+            Triple("Identidad OR", "A+0", "A"),
+            Triple("Dominación AND", "A*0", "0"),
+            Triple("Dominación OR", "A+1", "1"),
+            Triple("Idempotencia AND", "A*A", "A"),
+            Triple("Idempotencia OR", "A+A", "A"),
+            Triple("Complemento AND", "A*!A", "0"),
+            Triple("Complemento OR", "A+!A", "1"),
+            Triple("Doble negación", "!!A", "A"),
+            Triple("Absorción AND", "A*(A+B)", "A"),
+            Triple("Absorción OR", "A+(A*B)", "A")
+        )
+
+        for ((nombre, patron, reemplazo) in reglas) {
+
+            val resultado = aplicarPatron(
+                expresion,
+                patron,
+                reemplazo
+            )
+
+            if (resultado != expresion) {
+                return "$nombre|$resultado"
+            }
+        }
+
+        return expresion
+    }
+
+    private fun aplicarPatron(
+        expresion: String,
+        patron: String,
+        reemplazo: String
+    ): String {
+
+        if (patron == "!!A") {
+            return expresion.replace("!!", "")
+        }
+
+        val variable = Regex("[A-Z]")
+        val coincidencias = variable.findAll(expresion)
+            .map { it.value }
+            .distinct()
+            .toList()
+
+        for (v in coincidencias) {
+
+            val patronReal = patron.replace("A", v)
+            val reemplazoReal = reemplazo.replace("A", v)
+
+            if (expresion.contains(patronReal)) {
+                return expresion.replaceFirst(
+                    patronReal,
+                    reemplazoReal
+                )
+            }
+        }
+
+        return expresion
+    }
+}

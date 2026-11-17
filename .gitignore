@@ -1,0 +1,23 @@
+﻿*.iml
+.gradle/
+.idea/
+local.properties
+.DS_Store
+/build/
+**/build/
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+
+# Respaldos y archivos temporales
+*.backup
+*.bak
+*.bak*
+*.backup_*
+*.backup-*
+*.txt
+*.kt.backup*
+*.kts.backup*
+respaldo_*/
