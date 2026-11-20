@@ -111,6 +111,19 @@ fun PantallaAlgebraBooleana() {
         )
 
         Text(
+            text = "SIMPLIFICADOR ALGEBRAICO",
+            color = AlgebraVerde,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold
+        )
+
+        Text(
+            text = "Reduce expresiones booleanas mediante leyes de identidad, absorción, complemento e idempotencia. Verifica la equivalencia con tablas de verdad.",
+            color = AlgebraSecundario,
+            fontSize = 13.sp
+        )
+
+        Text(
             text = "FASE 2 - FUNDAMENTOS DE LÓGICA DIGITAL",
             color = AlgebraVerde,
             fontSize = 13.sp,
@@ -590,5 +603,6 @@ fun PantallaAlgebraBooleana() {
         }
     }
 }
+
 
 

@@ -1,4 +1,4 @@
-package com.example.laboratoriocircuitos
+﻿package com.example.laboratoriocircuitos
 
 import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
@@ -59,7 +59,7 @@ fun PantallaInformes(datosTCC: DatosInformeTCC? = null, datosSecuenciales: Datos
                     ${tituloActual.uppercase()}
 
                     Asignatura: $asignaturaActual
-                    Fecha de elaboración: $fecha
+                    Fecha de elaboraciÃ³n: $fecha
 
                     1. OBJETIVO
                     ${objetivoActual.ifBlank { "No especificado." }}
@@ -70,7 +70,7 @@ fun PantallaInformes(datosTCC: DatosInformeTCC? = null, datosSecuenciales: Datos
                     3. RESULTADOS
                     ${resultadosActual.ifBlank { "No especificados." }}
 
-                    4. RESULTADOS TÉCNICOS AUTOMÁTICOS
+                    4. RESULTADOS TÃ‰CNICOS AUTOMÃTICOS
                     ${datosAutomaticosActual.ifBlank { "No se incorporaron resultados de Karnaugh." }}
 
                     FASE 4. CIRCUITOS SECUENCIALES Y MEMORIA
@@ -98,13 +98,13 @@ fun PantallaInformes(datosTCC: DatosInformeTCC? = null, datosSecuenciales: Datos
                         "${flipFlop.id} (${flipFlop.tipo.nombre}): Q = ${if (flipFlop.estado) 1 else 0}; Q complementaria = ${if (flipFlop.estado) 0 else 1}"
                     }.ifBlank { "No hay flip-flops registrados en el editor." }}
 
-                    La simulación de los flip-flops D y JK permite observar el almacenamiento y la actualización de estados mediante pulsos de reloj. Los resultados corresponden al modelo lógico educativo de la aplicación, no a mediciones de hardware físico.
+                    La simulaciÃ³n de los flip-flops D y JK permite observar el almacenamiento y la actualizaciÃ³n de estados mediante pulsos de reloj. Los resultados corresponden al modelo lÃ³gico educativo de la aplicaciÃ³n, no a mediciones de hardware fÃ­sico.
 
-                    5. VALIDACIÓN GENERAL
+                    5. VALIDACIÃ“N GENERAL
                     Las expresiones originales y simplificadas se comparan mediante sus tablas de verdad. La equivalencia se verifica cuando ambas producen la misma salida para todas las entradas.
 
                     6. ALCANCE Y LIMITACIONES
-                    El conteo de complejidad es una estimación de nodos lógicos y no representa un conteo físico definitivo de compuertas. La salida R representa una condición lógica de registro validado, no almacenamiento persistente de eventos. La integración con sensores y actuadores físicos no está implementada en esta versión.
+                    El conteo de complejidad es una estimaciÃ³n de nodos lÃ³gicos y no representa un conteo fÃ­sico definitivo de compuertas. La salida R representa una condiciÃ³n lÃ³gica de registro validado, no almacenamiento persistente de eventos. La integraciÃ³n con sensores y actuadores fÃ­sicos no estÃ¡ implementada en esta versiÃ³n.
 
                     7. CONCLUSIONES
                     ${conclusionesActual.ifBlank { "No especificadas." }}
@@ -114,7 +114,7 @@ fun PantallaInformes(datosTCC: DatosInformeTCC? = null, datosSecuenciales: Datos
                 """.trimIndent()
 
                 context.contentResolver.openOutputStream(uri)?.use { salida ->
-                    generarDocumentoPDF(contenido, salida)
+                    generarDocumentoPDF(contenido, salida, datosSecuenciales)
                 } ?: throw IllegalStateException("No se pudo abrir el archivo.")
 
                 mensaje = "PDF generado correctamente."
@@ -131,14 +131,14 @@ fun PantallaInformes(datosTCC: DatosInformeTCC? = null, datosSecuenciales: Datos
         verticalArrangement = Arrangement.spacedBy(13.dp)
     ) {
         Text(
-            text = "INFORMES Y DOCUMENTACIÓN",
+            text = "INFORMES Y DOCUMENTACIÃ“N",
             color = InformeNaranja,
             fontSize = 21.sp,
             fontWeight = FontWeight.Bold
         )
 
         Text(
-            text = "Redacta el informe de tus prácticas, actividades y proyectos.",
+            text = "Redacta el informe de tus prÃ¡cticas, actividades y proyectos.",
             color = InformeSecundario,
             fontSize = 13.sp
         )
@@ -161,7 +161,7 @@ fun PantallaInformes(datosTCC: DatosInformeTCC? = null, datosSecuenciales: Datos
                     )
 
                     Text(
-                        text = "Fórmula: ${datosTCC.formulaOriginal}",
+                        text = "FÃ³rmula: ${datosTCC.formulaOriginal}",
                         color = InformeTexto
                     )
 
@@ -171,7 +171,7 @@ fun PantallaInformes(datosTCC: DatosInformeTCC? = null, datosSecuenciales: Datos
                     )
 
                     Text(
-                        text = "Mínterminos: ${datosTCC.resultadoKarnaugh.minterminos.size}",
+                        text = "MÃ­nterminos: ${datosTCC.resultadoKarnaugh.minterminos.size}",
                         color = InformeSecundario
                     )
 
@@ -195,13 +195,13 @@ fun PantallaInformes(datosTCC: DatosInformeTCC? = null, datosSecuenciales: Datos
             }
         } else {
             Text(
-                text = "Todavía no hay resultados de Karnaugh. Abre ese módulo, analiza una fórmula y vuelve aquí.",
+                text = "TodavÃ­a no hay resultados de Karnaugh. Abre ese mÃ³dulo, analiza una fÃ³rmula y vuelve aquÃ­.",
                 color = InformeSecundario,
                 fontSize = 12.sp
             )
         }
 
-        CampoInforme("Título del informe", titulo) { titulo = it }
+        CampoInforme("TÃ­tulo del informe", titulo) { titulo = it }
         CampoInforme("Asignatura", asignatura) { asignatura = it }
 
         CampoInforme(
@@ -284,11 +284,11 @@ fun PantallaInformes(datosTCC: DatosInformeTCC? = null, datosSecuenciales: Datos
                     color = InformeNaranja,
                     fontWeight = FontWeight.Bold
                 )
-                Text("• Título y asignatura", color = InformeTexto)
-                Text("• Objetivo", color = InformeTexto)
-                Text("• Procedimiento", color = InformeTexto)
-                Text("• Resultados", color = InformeTexto)
-                Text("• Conclusiones", color = InformeTexto)
+                Text("â€¢ TÃ­tulo y asignatura", color = InformeTexto)
+                Text("â€¢ Objetivo", color = InformeTexto)
+                Text("â€¢ Procedimiento", color = InformeTexto)
+                Text("â€¢ Resultados", color = InformeTexto)
+                Text("â€¢ Conclusiones", color = InformeTexto)
             }
         }
     }
@@ -300,9 +300,9 @@ private fun construirResumenTCC(datos: DatosInformeTCC): String {
     val comparacion = datos.comparacion
 
     return buildString {
-        appendLine("ANÁLISIS DE ÁLGEBRA BOOLEANA Y KARNAUGH")
+        appendLine("ANÃLISIS DE ÃLGEBRA BOOLEANA Y KARNAUGH")
         appendLine()
-        appendLine("1. FUNCIÓN ORIGINAL")
+        appendLine("1. FUNCIÃ“N ORIGINAL")
         appendLine(datos.formulaOriginal)
         appendLine()
         appendLine("2. VARIABLES")
@@ -334,25 +334,25 @@ private fun construirResumenTCC(datos: DatosInformeTCC): String {
         } else {
             k.grupos.forEachIndexed { indice, grupo ->
                 appendLine("Grupo ${indice + 1}:")
-                appendLine("Patrón: ${grupo.patron}")
-                appendLine("Expresión: ${grupo.expresion}")
+                appendLine("PatrÃ³n: ${grupo.patron}")
+                appendLine("ExpresiÃ³n: ${grupo.expresion}")
                 appendLine("Minterminos: ${grupo.minterminos.joinToString(", ")}")
                 appendLine("Celdas: ${grupo.celdas.joinToString(", ")}")
                 appendLine()
             }
         }
 
-        appendLine("6. FUNCIÓN SIMPLIFICADA")
+        appendLine("6. FUNCIÃ“N SIMPLIFICADA")
         appendLine(k.formulaSimplificada)
         appendLine()
-        appendLine("7. COMPARACIÓN DE COMPLEJIDAD")
+        appendLine("7. COMPARACIÃ“N DE COMPLEJIDAD")
         appendLine("Nodos estimados originales: ${comparacion.compuertasOriginales}")
         appendLine("Nodos estimados simplificados: ${comparacion.compuertasSimplificadas}")
         appendLine("Nodos reducidos: ${comparacion.compuertasReducidas}")
-        appendLine("Reducción estimada: ${"%.2f".format(Locale.US, comparacion.porcentajeReduccion)} %")
+        appendLine("ReducciÃ³n estimada: ${"%.2f".format(Locale.US, comparacion.porcentajeReduccion)} %")
         appendLine("Equivalencia: ${if (comparacion.equivalentes) "Verificada" else "No verificada"}")
         appendLine(comparacion.mensaje)
-        appendLine("Nota: la comparación representa una estimación de nodos lógicos de las expresiones, no un conteo físico definitivo de compuertas.")
+        appendLine("Nota: la comparaciÃ³n representa una estimaciÃ³n de nodos lÃ³gicos de las expresiones, no un conteo fÃ­sico definitivo de compuertas.")
         appendLine()
         appendLine("8. TABLA DE VERDAD")
         appendLine(
@@ -369,7 +369,7 @@ private fun construirResumenTCC(datos: DatosInformeTCC): String {
         }
 
         appendLine()
-        appendLine("9. SIMULACIÓN")
+        appendLine("9. SIMULACIÃ“N")
         datos.entradasSimulacion.toSortedMap().forEach { (variable, valor) ->
             appendLine("$variable = ${if (valor) 1 else 0}")
         }
@@ -377,7 +377,7 @@ private fun construirResumenTCC(datos: DatosInformeTCC): String {
         appendLine("Salida simplificada: ${if (datos.salidaSimplificada) 1 else 0}")
         appendLine(
             "Coincidencia: ${
-                if (datos.salidaOriginal == datos.salidaSimplificada) "Sí" else "No"
+                if (datos.salidaOriginal == datos.salidaSimplificada) "SÃ­" else "No"
             }"
         )
     }
@@ -411,7 +411,8 @@ private fun CampoInforme(
 
 private fun generarDocumentoPDF(
     contenido: String,
-    salida: java.io.OutputStream
+    salida: java.io.OutputStream,
+    datosSecuenciales: DatosSecuencialesInforme
 ) {
     val documento = PdfDocument()
 
@@ -503,7 +504,7 @@ private fun generarDocumentoPDF(
             }
 
             canvas.drawText(
-                "Página ${indice + 1} de ${grupos.size}",
+                "PÃ¡gina ${indice + 1} de ${grupos.size}",
                 margen,
                 alto - 25f,
                 pintura
@@ -512,8 +513,16 @@ private fun generarDocumentoPDF(
             documento.finishPage(pagina)
         }
 
+        GeneradorDiagramasInforme.agregarPaginas(
+            documento,
+            grupos.size + 1,
+            datosSecuenciales
+        )
+
         documento.writeTo(salida)
     } finally {
         documento.close()
     }
 }
+
+

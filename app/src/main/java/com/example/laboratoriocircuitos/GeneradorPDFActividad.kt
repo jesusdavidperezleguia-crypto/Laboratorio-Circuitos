@@ -1,4 +1,4 @@
-﻿package com.example.laboratoriocircuitos
+package com.example.laboratoriocircuitos
 
 import android.graphics.Paint
 import android.graphics.Path
@@ -73,7 +73,10 @@ object GeneradorPDFActividad {
                     "Cantidad de compuertas originales: ${solucion.circuito.cantidadCompuertas}",
                     "Cantidad de compuertas simplificadas: ${solucion.circuitoSimplificado.cantidadCompuertas}",
                     "",
-                    "5. EXPRESIÓN SIMPLIFICADA",
+                    "5. COMPUERTAS LÓGICAS UTILIZADAS",
+                    *obtenerCompuertas(solucion.formulaOriginal).toTypedArray(),
+                    "",
+                    "6. EXPRESIÓN SIMPLIFICADA",
                     solucion.simplificacion.simplificada,
                     "",
                     "6. PASOS DE SIMPLIFICACIÓN"
@@ -163,6 +166,35 @@ object GeneradorPDFActividad {
         }
     }
 
+    private fun obtenerCompuertas(formula: String): List<String> {
+        val compuertas = mutableListOf<String>()
+
+        if (formula.contains("*") || formula.contains("·") || formula.contains("∧")) {
+            compuertas.add("AND: multiplicación lógica (A * B)")
+        }
+
+        if (formula.contains("+") || formula.contains("∨")) {
+            compuertas.add("OR: suma lógica (A + B)")
+        }
+
+        if (formula.contains("¬") || formula.contains("!") || formula.contains("~")) {
+            compuertas.add("NOT: negación lógica (!A)")
+        }
+
+        if (formula.contains("↑")) {
+            compuertas.add("NAND: negación de AND (!(A * B))")
+        }
+
+        if (formula.contains("↓")) {
+            compuertas.add("NOR: negación de OR (!(A + B))")
+        }
+
+        if (compuertas.isEmpty()) {
+            compuertas.add("No se identificaron operadores lógicos.")
+        }
+
+        return compuertas
+    }
     private fun nuevaPagina(): PdfDocument.Page {
         numeroPagina++
         val info = PdfDocument.PageInfo.Builder(
@@ -225,7 +257,7 @@ object GeneradorPDFActividad {
             var y = 82f
 
             grupo.forEach { linea ->
-                if (Regex("^[1-8]\\. ").containsMatchIn(linea)
+                if (Regex("^[1-9]\\. ").containsMatchIn(linea)
                 ) {
                     pagina.canvas.drawText(linea.take(85), MARGEN, y, subtitulo)
                 } else {
@@ -315,6 +347,10 @@ object GeneradorPDFActividad {
                 contarHojas(nodo.entradaA) + contarHojas(nodo.entradaB)
             is NodoCircuitoDigital.CompuertaOR ->
                 contarHojas(nodo.entradaA) + contarHojas(nodo.entradaB)
+            is NodoCircuitoDigital.CompuertaNAND ->
+                contarHojas(nodo.entradaA) + contarHojas(nodo.entradaB)
+            is NodoCircuitoDigital.CompuertaNOR ->
+                contarHojas(nodo.entradaA) + contarHojas(nodo.entradaB)
         }
 
     private fun profundidad(nodo: NodoCircuitoDigital): Int =
@@ -326,6 +362,10 @@ object GeneradorPDFActividad {
             is NodoCircuitoDigital.CompuertaAND ->
                 1 + max(profundidad(nodo.entradaA), profundidad(nodo.entradaB))
             is NodoCircuitoDigital.CompuertaOR ->
+                1 + max(profundidad(nodo.entradaA), profundidad(nodo.entradaB))
+            is NodoCircuitoDigital.CompuertaNAND ->
+                1 + max(profundidad(nodo.entradaA), profundidad(nodo.entradaB))
+            is NodoCircuitoDigital.CompuertaNOR ->
                 1 + max(profundidad(nodo.entradaA), profundidad(nodo.entradaB))
         }
 
@@ -382,6 +422,18 @@ object GeneradorPDFActividad {
                     val a = dibujar(nodo.entradaA, nivel + 1)
                     val b = dibujar(nodo.entradaB, nivel + 1)
                     Posicion(x, (a.y + b.y) / 2f, "OR", listOf(a, b))
+                }
+
+                is NodoCircuitoDigital.CompuertaNAND -> {
+                    val a = dibujar(nodo.entradaA, nivel + 1)
+                    val b = dibujar(nodo.entradaB, nivel + 1)
+                    Posicion(x, (a.y + b.y) / 2f, "NAND", listOf(a, b))
+                }
+
+                is NodoCircuitoDigital.CompuertaNOR -> {
+                    val a = dibujar(nodo.entradaA, nivel + 1)
+                    val b = dibujar(nodo.entradaB, nivel + 1)
+                    Posicion(x, (a.y + b.y) / 2f, "NOR", listOf(a, b))
                 }
             }
         }
@@ -457,5 +509,7 @@ object GeneradorPDFActividad {
         documento.finishPage(pagina)
     }
 }
+
+
 
 

@@ -19,6 +19,16 @@ sealed class NodoCircuitoDigital {
         val entradaA: NodoCircuitoDigital,
         val entradaB: NodoCircuitoDigital
     ) : NodoCircuitoDigital()
+
+    data class CompuertaNAND(
+        val entradaA: NodoCircuitoDigital,
+        val entradaB: NodoCircuitoDigital
+    ) : NodoCircuitoDigital()
+
+    data class CompuertaNOR(
+        val entradaA: NodoCircuitoDigital,
+        val entradaB: NodoCircuitoDigital
+    ) : NodoCircuitoDigital()
 }
 
 data class CircuitoGenerado(
@@ -73,6 +83,16 @@ object GeneradorCircuitos {
                 1 +
                 contarCompuertas(nodo.entradaA) +
                 contarCompuertas(nodo.entradaB)
+
+            is NodoCircuitoDigital.CompuertaNAND ->
+                1 +
+                contarCompuertas(nodo.entradaA) +
+                contarCompuertas(nodo.entradaB)
+
+            is NodoCircuitoDigital.CompuertaNOR ->
+                1 +
+                contarCompuertas(nodo.entradaA) +
+                contarCompuertas(nodo.entradaB)
         }
     }
 
@@ -99,14 +119,18 @@ object GeneradorCircuitos {
 
             while (
                 coincide('+') ||
-                coincide('|')
+                coincide('|') ||
+                coincide('↓')
             ) {
+                val operador = texto[posicion]
                 avanzar()
+                val derecha = leerAND()
 
-                resultado = NodoCircuitoDigital.CompuertaOR(
-                    resultado,
-                    leerAND()
-                )
+                resultado = if (operador == '↓') {
+                    NodoCircuitoDigital.CompuertaNOR(resultado, derecha)
+                } else {
+                    NodoCircuitoDigital.CompuertaOR(resultado, derecha)
+                }
             }
 
             return resultado
@@ -120,14 +144,18 @@ object GeneradorCircuitos {
                 coincide('&') ||
                 coincide('·') ||
                 coincide('*') ||
-                coincide('.')
+                coincide('.') ||
+                coincide('↑')
             ) {
+                val operador = texto[posicion]
                 avanzar()
+                val derecha = leerUnario()
 
-                resultado = NodoCircuitoDigital.CompuertaAND(
-                    resultado,
-                    leerUnario()
-                )
+                resultado = if (operador == '↑') {
+                    NodoCircuitoDigital.CompuertaNAND(resultado, derecha)
+                } else {
+                    NodoCircuitoDigital.CompuertaAND(resultado, derecha)
+                }
             }
 
             return resultado
@@ -217,4 +245,6 @@ object GeneradorCircuitos {
         }
     }
 }
+
+
 

@@ -70,6 +70,17 @@ object SimuladorCircuitos {
                 evaluarNodo(nodo.entradaA, entradas) ||
                     evaluarNodo(nodo.entradaB, entradas)
             }
+
+            is NodoCircuitoDigital.CompuertaNAND -> {
+                !(evaluarNodo(nodo.entradaA, entradas) &&
+                    evaluarNodo(nodo.entradaB, entradas))
+            }
+
+            is NodoCircuitoDigital.CompuertaNOR -> {
+                !(evaluarNodo(nodo.entradaA, entradas) ||
+                    evaluarNodo(nodo.entradaB, entradas))
+            }
         }
     }
 }
+

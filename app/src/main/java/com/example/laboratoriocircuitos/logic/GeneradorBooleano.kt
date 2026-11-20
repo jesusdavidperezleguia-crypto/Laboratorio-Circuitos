@@ -51,10 +51,16 @@ object GeneradorBooleano {
         private fun leerOr(): Boolean {
             var resultado = leerAnd()
 
-            while (coincide('+') || coincide('|')) {
+            while (coincide('+') || coincide('|') || coincide('↓')) {
+                val operador = texto[posicion]
                 avanzar()
                 val derecho = leerAnd()
-                resultado = resultado || derecho
+
+                resultado = if (operador == '↓') {
+                    !(resultado || derecho)
+                } else {
+                    resultado || derecho
+                }
             }
 
             return resultado
@@ -68,11 +74,18 @@ object GeneradorBooleano {
                 coincide('&') ||
                 coincide('·') ||
                 coincide('*') ||
-                coincide('.')
+                coincide('.') ||
+                coincide('↑')
             ) {
+                val operador = texto[posicion]
                 avanzar()
                 val derecho = leerUnario()
-                resultado = resultado && derecho
+
+                resultado = if (operador == '↑') {
+                    !(resultado && derecho)
+                } else {
+                    resultado && derecho
+                }
             }
 
             return resultado
@@ -152,4 +165,5 @@ object GeneradorBooleano {
         }
     }
 }
+
 

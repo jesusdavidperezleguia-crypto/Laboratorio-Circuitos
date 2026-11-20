@@ -1,4 +1,4 @@
-package com.example.laboratoriocircuitos
+﻿package com.example.laboratoriocircuitos
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.horizontalScroll
@@ -114,6 +114,26 @@ fun CircuitoVisual(raiz: NodoCircuitoDigital) {
 
                 Offset(x, y)
             }
+
+            is NodoCircuitoDigital.CompuertaNAND -> {
+                val a = construir(nodo.entradaA, profundidad + 1)
+                val b = construir(nodo.entradaB, profundidad + 1)
+                val y = (a.y + b.y) / 2f
+                elementos.add(Elemento("NAND", x, y, naranja))
+                conexiones.add(Offset(x + 45f, y) to a)
+                conexiones.add(Offset(x + 45f, y) to b)
+                Offset(x, y)
+            }
+
+            is NodoCircuitoDigital.CompuertaNOR -> {
+                val a = construir(nodo.entradaA, profundidad + 1)
+                val b = construir(nodo.entradaB, profundidad + 1)
+                val y = (a.y + b.y) / 2f
+                elementos.add(Elemento("NOR", x, y, naranja))
+                conexiones.add(Offset(x + 45f, y) to a)
+                conexiones.add(Offset(x + 45f, y) to b)
+                Offset(x, y)
+            }
         }
     }
 
@@ -208,3 +228,4 @@ fun CircuitoVisual(raiz: NodoCircuitoDigital) {
         )
     }
 }
+
