@@ -1,4 +1,4 @@
-﻿package com.example.laboratoriocircuitos
+package com.example.laboratoriocircuitos
 
 import android.graphics.Canvas
 import android.graphics.Color
@@ -106,47 +106,43 @@ object GeneradorDiagramasInforme {
 
         documento.finishPage(pagina)
     }
+    fun agregarDiagramasBooleanos(
+        documento: PdfDocument,
+        paginaInicial: Int
+    ): Int {
+        dibujarBooleano(documento, paginaInicial, "AL = D + !E", "D + !E")
+        dibujarBooleano(documento, paginaInicial + 1, "AP = A * B * C * !D * E * F", "A*B*C*!D*E*F")
+        dibujarBooleano(documento, paginaInicial + 2, "R = A * B", "A*B")
+        return 3
+    }
+
+    fun agregarDiagramasSecuenciales(
+        documento: PdfDocument,
+        paginaInicial: Int,
+        datos: DatosSecuencialesInforme
+    ): Int {
+        dibujarContadores(documento, paginaInicial, datos)
+
+        if (datos.componentes.isNotEmpty()) {
+            dibujarEditor(documento, paginaInicial + 1, datos)
+            return 2
+        }
+
+        return 1
+    }
+
     fun agregarPaginas(
         documento: PdfDocument,
         paginaInicial: Int,
         datos: DatosSecuencialesInforme
     ) {
-        dibujarBooleano(
+        val cantidadBooleanos = agregarDiagramasBooleanos(documento, paginaInicial)
+        agregarDiagramasSecuenciales(
             documento,
-            paginaInicial,
-            "AL = D + !E",
-            "D + !E"
-        )
-
-        dibujarBooleano(
-            documento,
-            paginaInicial + 1,
-            "AP = A * B * C * !D * E * F",
-            "A*B*C*!D*E*F"
-        )
-
-        dibujarBooleano(
-            documento,
-            paginaInicial + 2,
-            "R = A * B",
-            "A*B"
-        )
-
-        dibujarContadores(
-            documento,
-            paginaInicial + 3,
+            paginaInicial + cantidadBooleanos,
             datos
         )
-
-        if (datos.componentes.isNotEmpty()) {
-            dibujarEditor(
-                documento,
-                paginaInicial + 4,
-                datos
-            )
-        }
     }
-
     private fun dibujarBooleano(
         documento: PdfDocument,
         numero: Int,

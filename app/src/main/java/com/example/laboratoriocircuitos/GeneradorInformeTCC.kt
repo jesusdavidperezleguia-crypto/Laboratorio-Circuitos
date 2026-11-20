@@ -4,6 +4,7 @@ import com.example.laboratoriocircuitos.logic.ComparadorCircuitos
 import com.example.laboratoriocircuitos.logic.ConversorNumeracion
 import com.example.laboratoriocircuitos.logic.GeneradorKarnaugh
 import com.example.laboratoriocircuitos.logic.GeneradorTablaVerdad
+import com.example.laboratoriocircuitos.logic.SimplificadorBooleano
 import java.util.Locale
 
 fun construirResumenCompletoTCC(): String {
@@ -160,6 +161,41 @@ fun construirResumenCompletoTCC(): String {
         )
         appendLine()
 
+        val ejemploDidactico = SimplificadorBooleano.simplificar("F = A+A*B")
+
+        appendLine("FASE 4. EJEMPLO DIDACTICO DE SIMPLIFICACION")
+        appendLine()
+        appendLine("4.1 Funcion original")
+        appendLine("F = A + A*B")
+        appendLine("Variables: ${ejemploDidactico.variables.joinToString(", ")}")
+        appendLine()
+        appendLine("4.2 Desarrollo paso a paso")
+
+        if (ejemploDidactico.pasos.isEmpty()) {
+            appendLine("El simplificador no registro pasos intermedios.")
+        } else {
+            ejemploDidactico.pasos.forEachIndexed { indice, paso ->
+                appendLine("Paso ${indice + 1}: ${paso.regla}")
+                appendLine("Antes: ${paso.antes}")
+                appendLine("Despues: ${paso.despues}")
+                appendLine("Explicacion: ${paso.explicacion}")
+                appendLine()
+            }
+        }
+
+        appendLine("4.3 Resultado simplificado")
+        appendLine("F = ${ejemploDidactico.simplificada}")
+        appendLine()
+        appendLine("4.4 Verificacion de equivalencia")
+        appendLine(
+            "Equivalencia: ${
+                if (ejemploDidactico.equivalente) "VERIFICADA" else "NO VERIFICADA"
+            }"
+        )
+        appendLine(
+            "La verificacion compara las salidas de la funcion original y la simplificada."
+        )
+        appendLine()
         appendLine("ALCANCE Y LIMITACIONES")
         appendLine(
             "El conteo de complejidad presentado es una estimacion " +

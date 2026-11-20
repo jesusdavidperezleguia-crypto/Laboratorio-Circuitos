@@ -1,4 +1,4 @@
-﻿package com.example.laboratoriocircuitos
+package com.example.laboratoriocircuitos
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.horizontalScroll
@@ -15,7 +15,11 @@ import androidx.compose.ui.unit.dp
 import com.example.laboratoriocircuitos.logic.NodoCircuitoDigital
 
 @Composable
-fun CircuitoVisual(raiz: NodoCircuitoDigital) {
+fun CircuitoVisual(
+    raiz: NodoCircuitoDigital,
+    nombreSalida: String = "Z",
+    titulo: String = "DIAGRAMA DEL CIRCUITO"
+) {
 
     val naranja = Color(0xFFFF8733)
     val azul = Color(0xFF64B5F6)
@@ -142,7 +146,7 @@ fun CircuitoVisual(raiz: NodoCircuitoDigital) {
     Column {
 
         Text(
-            text = "DIAGRAMA DEL CIRCUITO",
+            text = titulo,
             color = naranja,
             style = MaterialTheme.typography.titleMedium
         )
@@ -207,7 +211,7 @@ fun CircuitoVisual(raiz: NodoCircuitoDigital) {
                 }
 
                 drawContext.canvas.nativeCanvas.drawText(
-                    "Z",
+                    nombreSalida,
                     (salida.x - 55f) * escala,
                     salida.y * escala + 6f * escala,
                     android.graphics.Paint().apply {

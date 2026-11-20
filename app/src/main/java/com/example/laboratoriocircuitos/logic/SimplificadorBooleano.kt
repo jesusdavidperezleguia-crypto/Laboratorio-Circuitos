@@ -17,6 +17,12 @@ data class ResultadoSimplificacion(
 
 object SimplificadorBooleano {
 
+    private data class Cambio(
+        val expresion: String,
+        val regla: String,
+        val explicacion: String
+    )
+
     fun simplificar(formula: String): ResultadoSimplificacion {
         val circuitoOriginal = GeneradorCircuitos.generar(formula)
         val original = circuitoOriginal.expresion
@@ -28,24 +34,24 @@ object SimplificadorBooleano {
         var actual = original
         val pasos = mutableListOf<PasoSimplificacion>()
 
-        if (!original.contains('↑') && !original.contains('↓')) {
-            repeat(30) {
-            val siguiente = simplificarNodo(actual)
+        var iteraciones = 0
 
-            if (siguiente == actual) return@repeat
+        while (iteraciones < 100) {
+            val cambio = simplificarUnPaso(actual) ?: break
+
+            if (cambio.expresion == actual) break
 
             pasos.add(
                 PasoSimplificacion(
-                    regla = identificarRegla(actual, siguiente),
+                    regla = cambio.regla,
                     antes = actual,
-                    despues = siguiente,
-                    explicacion = "Se aplicaron propiedades del álgebra de Boole."
+                    despues = cambio.expresion,
+                    explicacion = cambio.explicacion
                 )
             )
 
-            actual = siguiente
-        }
-
+            actual = cambio.expresion
+            iteraciones++
         }
 
         val circuitoNuevo = GeneradorCircuitos.generar(actual)
@@ -58,16 +64,19 @@ object SimplificadorBooleano {
                 .mapIndexed { indice, variable ->
                     val desplazamiento =
                         circuitoOriginal.variables.size - indice - 1
+
                     variable to (((numero shr desplazamiento) and 1) == 1)
                 }
                 .toMap()
 
             val valorOriginal = SimuladorCircuitos.simular(
-                circuitoOriginal, valores
+                circuitoOriginal,
+                valores
             ).resultadoSalida
 
             val valorNuevo = SimuladorCircuitos.simular(
-                circuitoNuevo, valores
+                circuitoNuevo,
+                valores
             ).resultadoSalida
 
             if (valorOriginal != valorNuevo) {
@@ -85,116 +94,293 @@ object SimplificadorBooleano {
         )
     }
 
-    private fun simplificarNodo(expresion: String): String {
-        var e = quitarParentesisExternos(expresion.replace(" ", ""))
+    private fun simplificarUnPaso(expresion: String): Cambio? {
+        val e = expresion.replace(" ", "")
 
-        while (e.startsWith("!!")) {
-            e = e.removePrefix("!!")
+        if (e.isEmpty()) return null
+
+        val sinParentesis = quitarParentesisExternos(e)
+
+        if (sinParentesis != e) {
+            return Cambio(
+                sinParentesis,
+                "Eliminación de paréntesis",
+                "Se eliminaron paréntesis externos que no modifican la prioridad lógica."
+            )
+        }
+
+        if (e.startsWith("!!")) {
+            return Cambio(
+                e.removePrefix("!!"),
+                "Doble negación",
+                "La negación de una negación equivale a la variable original."
+            )
         }
 
         val suma = dividirNivelPrincipal(e, '+')
 
         if (suma.size > 1) {
-            val terminos = suma.map { simplificarNodo(it) }
-            return simplificarSuma(terminos)
+
+            // Primero se simplifican los términos internos.
+            for (i in suma.indices) {
+                val cambioInterno = simplificarUnPaso(suma[i])
+
+                if (cambioInterno != null) {
+                    val nuevos = suma.toMutableList()
+                    nuevos[i] = cambioInterno.expresion
+
+                    return Cambio(
+                        nuevos.joinToString("+"),
+                        cambioInterno.regla,
+                        cambioInterno.explicacion
+                    )
+                }
+            }
+
+            val cambioDirecto = simplificarSuma(suma)
+
+            if (cambioDirecto != null) return cambioDirecto
+
+            return factorizarSuma(suma)
         }
 
         val producto = dividirNivelPrincipal(e, '*')
 
         if (producto.size > 1) {
-            val factores = producto.map { simplificarNodo(it) }
-            return simplificarProducto(factores)
+
+            // Primero se simplifican los factores internos.
+            for (i in producto.indices) {
+                val factorOriginal = producto[i]
+                val factorInterior = quitarParentesisExternos(factorOriginal)
+                val cambioInterno = simplificarUnPaso(factorInterior)
+
+                if (cambioInterno != null) {
+                    val nuevos = producto.toMutableList()
+
+                    val resultadoInterno = cambioInterno.expresion
+                    val necesitaParentesis =
+                        dividirNivelPrincipal(resultadoInterno, '+').size > 1
+
+                    nuevos[i] = if (necesitaParentesis) {
+                        "($resultadoInterno)"
+                    } else {
+                        resultadoInterno
+                    }
+
+                    return Cambio(
+                        nuevos.joinToString("*"),
+                        cambioInterno.regla,
+                        cambioInterno.explicacion
+                    )
+                }
+            }
+
+            return simplificarProducto(producto)
         }
 
-        return e
+        return null
     }
 
-    private fun simplificarSuma(entrada: List<String>): String {
-        var terminos = entrada
-            .flatMap { dividirNivelPrincipal(it, '+') }
+    private fun simplificarSuma(entrada: List<String>): Cambio? {
+        val terminos = entrada
             .map { quitarParentesisExternos(it) }
             .filter { it.isNotBlank() }
-            .distinct()
 
-        if ("1" in terminos) return "1"
-        terminos = terminos.filterNot { it == "0" }
+        if ("1" in terminos) {
+            return Cambio(
+                "1",
+                "Ley de dominación OR",
+                "Una entrada verdadera hace que toda la operación OR sea verdadera."
+            )
+        }
 
-        if (terminos.isEmpty()) return "0"
+        val sinCeros = terminos.filterNot { it == "0" }
 
-        // Complemento: A + !A = 1
-        if (contieneComplementos(terminos)) return "1"
+        if (sinCeros.isEmpty()) {
+            return Cambio(
+                "0",
+                "Elemento neutro OR",
+                "La suma lógica de ceros es cero."
+            )
+        }
 
-        // Absorción general: A + A*B = A
-        val eliminados = terminos.filterIndexed { i, termino ->
+        if (sinCeros.distinct().size < sinCeros.size) {
+            return Cambio(
+                sinCeros.distinct().joinToString("+"),
+                "Idempotencia OR",
+                "Una variable sumada consigo misma conserva su valor."
+            )
+        }
+
+        if (contieneComplementos(sinCeros)) {
+            return Cambio(
+                "1",
+                "Ley del complemento OR",
+                "Una variable OR con su complemento siempre produce uno."
+            )
+        }
+
+        val eliminados = sinCeros.filterIndexed { i, termino ->
             val factores = dividirNivelPrincipal(termino, '*').toSet()
 
-            terminos.indices.any { j ->
+            sinCeros.indices.any { j ->
                 if (i == j) {
                     false
                 } else {
-                    val otro = dividirNivelPrincipal(terminos[j], '*').toSet()
-                    otro.size < factores.size && otro.containsAll(factores)
+                    val otros = dividirNivelPrincipal(
+                        sinCeros[j],
+                        '*'
+                    ).toSet()
+
+                    otros.size < factores.size &&
+                        otros.containsAll(factores)
                 }
             }
         }
 
-        terminos = terminos.filterNot { it in eliminados }.distinct()
+        if (eliminados.isNotEmpty()) {
+            val resultado = sinCeros.filterNot {
+                it in eliminados
+            }.distinct()
 
-        return when (terminos.size) {
-            0 -> "0"
-            1 -> terminos.first()
-            else -> terminos.joinToString("+") { termino ->
-                if (dividirNivelPrincipal(termino, '+').size > 1) {
-                    "($termino)"
-                } else {
-                    termino
-                }
-            }
+            return Cambio(
+                resultado.joinToString("+"),
+                "Absorción OR",
+                "Se eliminaron términos que ya están contenidos en otro término más simple."
+            )
         }
+
+        if (sinCeros.size != terminos.size) {
+            return Cambio(
+                sinCeros.joinToString("+"),
+                "Elemento neutro OR",
+                "Se eliminaron los ceros de una operación OR."
+            )
+        }
+
+        return null
     }
 
-    private fun simplificarProducto(entrada: List<String>): String {
-        var factores = entrada
-            .flatMap { dividirNivelPrincipal(it, '*') }
+    private fun simplificarProducto(entrada: List<String>): Cambio? {
+        val factores = entrada
             .map { quitarParentesisExternos(it) }
             .filter { it.isNotBlank() }
-            .distinct()
 
-        if ("0" in factores) return "0"
-        factores = factores.filterNot { it == "1" }
+        if ("0" in factores) {
+            return Cambio(
+                "0",
+                "Ley de dominación AND",
+                "Una entrada falsa hace que todo el producto lógico sea falso."
+            )
+        }
 
-        if (factores.isEmpty()) return "1"
+        val sinUnos = factores.filterNot { it == "1" }
 
-        // Complemento: A * !A = 0
-        if (contieneComplementos(factores)) return "0"
+        if (sinUnos.isEmpty()) {
+            return Cambio(
+                "1",
+                "Elemento neutro AND",
+                "El producto lógico de unos es uno."
+            )
+        }
 
-        // Absorción dual: A * (A+B) = A
-        val eliminados = factores.filterIndexed { i, factor ->
-            val literales = dividirNivelPrincipal(factor, '+').toSet()
+        if (sinUnos.distinct().size < sinUnos.size) {
+            return Cambio(
+                sinUnos.distinct().joinToString("*"),
+                "Idempotencia AND",
+                "Una variable multiplicada por sí misma conserva su valor."
+            )
+        }
 
-            factores.indices.any { j ->
+        if (contieneComplementos(sinUnos)) {
+            return Cambio(
+                "0",
+                "Ley del complemento AND",
+                "Una variable AND con su complemento siempre produce cero."
+            )
+        }
+
+        val eliminados = sinUnos.filterIndexed { i, factor ->
+            val terminos = dividirNivelPrincipal(factor, '+').toSet()
+
+            sinUnos.indices.any { j ->
                 if (i == j) {
                     false
                 } else {
-                    val otro = dividirNivelPrincipal(factores[j], '+').toSet()
-                    otro.size < literales.size && otro.containsAll(literales)
+                    val otros = dividirNivelPrincipal(
+                        sinUnos[j],
+                        '+'
+                    ).toSet()
+
+                    otros.size < terminos.size &&
+                        otros.containsAll(terminos)
                 }
             }
         }
 
-        factores = factores.filterNot { it in eliminados }.distinct()
+        if (eliminados.isNotEmpty()) {
+            val resultado = sinUnos.filterNot {
+                it in eliminados
+            }.distinct()
 
-        return when (factores.size) {
-            0 -> "1"
-            1 -> factores.first()
-            else -> factores.joinToString("*") { factor ->
-                if (dividirNivelPrincipal(factor, '+').size > 1) {
-                    "($factor)"
-                } else {
-                    factor
-                }
-            }
+            return Cambio(
+                resultado.joinToString("*"),
+                "Absorción AND",
+                "Se eliminaron factores que ya están contenidos en otro factor más simple."
+            )
         }
+
+        if (sinUnos.size != factores.size) {
+            return Cambio(
+                sinUnos.joinToString("*"),
+                "Elemento neutro AND",
+                "Se eliminaron los unos de una operación AND."
+            )
+        }
+
+        return null
+    }
+
+    private fun factorizarSuma(terminos: List<String>): Cambio? {
+        if (terminos.size < 2) return null
+
+        val factoresPorTermino = terminos.map { termino ->
+            dividirNivelPrincipal(
+                quitarParentesisExternos(termino),
+                '*'
+            )
+        }
+
+        val comunes = factoresPorTermino.first().filter { factor ->
+            factoresPorTermino.all { lista ->
+                factor in lista
+            }
+        }.distinct()
+
+        if (comunes.isEmpty()) return null
+
+        val restantes = factoresPorTermino.map { lista ->
+            val copia = lista.toMutableList()
+
+            comunes.forEach { comun ->
+                copia.remove(comun)
+            }
+
+            copia.joinToString("*")
+        }
+
+        if (restantes.any { it.isBlank() }) return null
+
+        val parteComun = comunes.joinToString("*")
+        val parteRestante = restantes.joinToString("+")
+
+        val resultado = "$parteComun*($parteRestante)"
+
+        return Cambio(
+            resultado,
+            "Factor común distributivo",
+            "Se extrajo el factor común de los términos de una suma aplicando la propiedad distributiva."
+        )
     }
 
     private fun contieneComplementos(elementos: List<String>): Boolean {
@@ -206,18 +392,6 @@ object SimplificadorBooleano {
             } else {
                 "!$elemento" in conjunto
             }
-        }
-    }
-
-    private fun identificarRegla(antes: String, despues: String): String {
-        return when {
-            antes.contains("+") && despues.length < antes.length ->
-                "Absorción, idempotencia o complemento OR"
-
-            antes.contains("*") && despues.length < antes.length ->
-                "Absorción, idempotencia o complemento AND"
-
-            else -> "Simplificación algebraica"
         }
     }
 
@@ -233,9 +407,12 @@ object SimplificadorBooleano {
             when (expresion[i]) {
                 '(' -> profundidad++
                 ')' -> profundidad--
+
                 operador -> {
                     if (profundidad == 0) {
-                        partes.add(expresion.substring(inicio, i))
+                        partes.add(
+                            expresion.substring(inicio, i)
+                        )
                         inicio = i + 1
                     }
                 }
@@ -243,6 +420,7 @@ object SimplificadorBooleano {
         }
 
         partes.add(expresion.substring(inicio))
+
         return partes.filter { it.isNotBlank() }
     }
 
@@ -269,7 +447,10 @@ object SimplificadorBooleano {
             }
 
             if (envuelveTodo) {
-                resultado = resultado.substring(1, resultado.length - 1)
+                resultado = resultado.substring(
+                    1,
+                    resultado.length - 1
+                )
             } else {
                 break
             }

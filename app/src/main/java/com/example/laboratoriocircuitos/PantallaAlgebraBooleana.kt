@@ -1,4 +1,4 @@
-﻿package com.example.laboratoriocircuitos
+package com.example.laboratoriocircuitos
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -53,6 +53,12 @@ private val funcionesIndustriales = listOf(
         formula = "R = A*B",
         descripcion = "Representa la validación conjunta de la tarjeta y el PIN.",
         variables = "A: tarjeta autorizada. B: PIN correcto."
+    ),
+    FuncionIndustrial(
+        nombre = "Ejemplo didáctico",
+        formula = "F = A+A*B",
+        descripcion = "Ejemplo de la ley de absorción: cuando A ya es verdadera, el término A*B no cambia el resultado.",
+        variables = "A y B: variables binarias. Resultado esperado: F = A."
     )
 )
 
@@ -74,6 +80,11 @@ fun PantallaAlgebraBooleana() {
     var circuito by remember {
         mutableStateOf<CircuitoGenerado?>(null)
     }
+
+    var circuitoOriginal by remember {
+        mutableStateOf<CircuitoGenerado?>(null)
+    }
+
     var tablaVerdad by remember {
         mutableStateOf<TablaVerdadResultado?>(null)
     }
@@ -91,6 +102,7 @@ fun PantallaAlgebraBooleana() {
         funcionSeleccionada = funcion.nombre
         resultado = null
         circuito = null
+        circuitoOriginal = null
         tablaVerdad = null
         error = null
     }
@@ -148,7 +160,7 @@ fun PantallaAlgebraBooleana() {
             ) {
 
                 Text(
-                    text = "FUNCIONES INDUSTRIALES",
+                    text = "FUNCIONES Y EJEMPLO DIDÁCTICO",
                     color = AlgebraNaranja,
                     fontWeight = FontWeight.Bold
                 )
@@ -219,6 +231,7 @@ fun PantallaAlgebraBooleana() {
                         funcionSeleccionada = null
                         resultado = null
                         circuito = null
+                        circuitoOriginal = null
                         tablaVerdad = null
                         error = null
                     },
@@ -261,6 +274,12 @@ fun PantallaAlgebraBooleana() {
                                 null
                             }
 
+                            circuitoOriginal = if (nuevoResultado.equivalente) {
+                                GeneradorCircuitos.generar(formula)
+                            } else {
+                                null
+                            }
+
                             circuito = if (nuevoResultado.equivalente) {
                                 GeneradorCircuitos.generar(
                                     nuevoResultado.simplificada
@@ -274,6 +293,7 @@ fun PantallaAlgebraBooleana() {
                         } catch (e: Exception) {
                             resultado = null
                             circuito = null
+                            circuitoOriginal = null
                             tablaVerdad = null
                             error = e.message
                                 ?: "No se pudo procesar la expresión."
@@ -344,7 +364,7 @@ fun PantallaAlgebraBooleana() {
                     )
 
                     Text(
-                        text = "Compuertas del circuito: ${circuito?.cantidadCompuertas ?: 0}",
+                        text = "Compuertas originales: ${circuitoOriginal?.cantidadCompuertas ?: 0} | Simplificadas: ${circuito?.cantidadCompuertas ?: 0}",
                         color = AlgebraSecundario
                     )
 
@@ -526,7 +546,20 @@ fun PantallaAlgebraBooleana() {
                 }
             }
 
-            if (res.equivalente && circuito != null) {
+            if (
+                res.equivalente &&
+                circuitoOriginal != null &&
+                circuito != null
+            ) {
+                val nombreSalida = if ("=" in formula) {
+                    formula.substringBefore("=")
+                        .trim()
+                        .uppercase()
+                        .ifBlank { "F" }
+                } else {
+                    "F"
+                }
+
                 Card(
                     colors = CardDefaults.cardColors(
                         containerColor = AlgebraPanel
@@ -534,21 +567,55 @@ fun PantallaAlgebraBooleana() {
                     shape = RoundedCornerShape(14.dp)
                 ) {
                     Column(
-                        modifier = Modifier.padding(12.dp)
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-
                         Text(
-                            text = "CIRCUITO DE LA FUNCIÓN",
+                            text = "1. CIRCUITO ORIGINAL",
                             color = AlgebraNaranja,
                             fontWeight = FontWeight.Bold
                         )
 
-                        Spacer(
-                            modifier = Modifier.height(12.dp)
+                        Text(
+                            text = "Expresión: ${res.original}",
+                            color = AlgebraSecundario,
+                            fontSize = 12.sp
                         )
 
                         CircuitoVisual(
-                            raiz = circuito!!.raiz
+                            raiz = circuitoOriginal!!.raiz,
+                            nombreSalida = nombreSalida,
+                            titulo = "DIAGRAMA ORIGINAL"
+                        )
+                    }
+                }
+
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = AlgebraPanel
+                    ),
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = "2. CIRCUITO SIMPLIFICADO",
+                            color = AlgebraVerde,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        Text(
+                            text = "Expresión: ${res.simplificada}",
+                            color = AlgebraSecundario,
+                            fontSize = 12.sp
+                        )
+
+                        CircuitoVisual(
+                            raiz = circuito!!.raiz,
+                            nombreSalida = nombreSalida,
+                            titulo = "DIAGRAMA SIMPLIFICADO"
                         )
                     }
                 }
